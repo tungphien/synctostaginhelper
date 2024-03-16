@@ -33,7 +33,6 @@ namespace SyncToStaging.Helper.Services
             StagingBaseInputModel<object> stagingInput = new();
             var requestId = Guid.NewGuid();
             stagingInput.DataType = input.DataType.ToUpper();
-            stagingInput.Id = requestId;
             stagingInput.TempId = requestId;
             stagingInput.Data = input.Data;
             request.AddJsonBody(JsonConvert.SerializeObject(stagingInput));

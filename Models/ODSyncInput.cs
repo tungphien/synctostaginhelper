@@ -24,6 +24,9 @@ namespace SyncToStaging.Helper.Models
         /// PRINCIPAL CODE|DISTRIBUTOR CODE|OUTLET CODE| NULL
         /// </summary>
         public string OwnerCode { get; set; }
+        /// <summary>
+        /// Đối với case DELETE thì sẽ truyền Id record vào dạng string
+        /// </summary>
         public Object Data { get; set; }
         /// <summary>
         /// Default là true. Dùng cho case data reference không cần notify. Set NeedNotify=false

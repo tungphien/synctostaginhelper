@@ -5,7 +5,7 @@
   },
   "projects": {
     "D:\\Working\\DigiTech\\OD\\1SOD.SyncToStaging.Helper\\SyncToStaging.Helper\\SyncToStaging.Helper.csproj": {
-      "version": "1.0.0",
+      "version": "1.0.3",
       "restore": {
         "projectUniqueName": "D:\\Working\\DigiTech\\OD\\1SOD.SyncToStaging.Helper\\SyncToStaging.Helper\\SyncToStaging.Helper.csproj",
         "projectName": "SyncToStaging.Helper",
@@ -51,18 +51,10 @@
               "target": "Package",
               "version": "[7.0.14, )"
             },
-            "Microsoft.Owin": {
-              "target": "Package",
-              "version": "[4.2.2, )"
-            },
             "Newtonsoft.Json": {
               "suppressParent": "All",
               "target": "Package",
               "version": "[13.0.3, )"
-            },
-            "Owin": {
-              "target": "Package",
-              "version": "[1.0.0, )"
             },
             "RestSharp": {
               "suppressParent": "All",

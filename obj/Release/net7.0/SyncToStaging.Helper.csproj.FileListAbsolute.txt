@@ -1,0 +1,13 @@
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\bin\Release\net7.0\SyncToStaging.Helper.deps.json
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\bin\Release\net7.0\SyncToStaging.Helper.dll
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\bin\Release\net7.0\SyncToStaging.Helper.pdb
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\SyncToStaging.Helper.csproj.AssemblyReference.cache
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\SyncToStaging.Helper.GeneratedMSBuildEditorConfig.editorconfig
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\SyncToStaging.Helper.AssemblyInfoInputs.cache
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\SyncToStaging.Helper.AssemblyInfo.cs
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\SyncToStaging.Helper.csproj.CoreCompileInputs.cache
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\SyncToStaging.Helper.sourcelink.json
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\SyncToStaging.Helper.dll
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\refint\SyncToStaging.Helper.dll
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\SyncToStaging.Helper.pdb
+D:\Working\DigiTech\OD\1SOD.SyncToStaging.Helper\SyncToStaging.Helper\obj\Release\net7.0\ref\SyncToStaging.Helper.dll
