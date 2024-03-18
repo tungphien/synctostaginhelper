@@ -32,5 +32,10 @@ namespace SyncToStaging.Helper.Models
         /// Default là true. Dùng cho case data reference không cần notify. Set NeedNotify=false
         /// </summary>
         public bool NeedNotify { get; set; } = true;
+
+        /// <summary>
+        /// IsUrgent dùng cho khi noify mobile
+        /// </summary>
+        public bool IsUrgent { get; set; } = true;
     }
 }

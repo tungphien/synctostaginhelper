@@ -7,6 +7,14 @@
         public bool Success { get; set; }
         public string StrackTrace { get; set; }
         public int TotalCount { get; set; }
+        /// <summary>
+        /// Sẽ lưu thông tin input param gửi qua mobile
+        /// </summary>
+        public string NotifyMobileParamLog { get; set; }
+        /// <summary>
+        /// Sẽ lưu thông tin uri mobile đang gọi
+        /// </summary>
+        public string NotifyMobileUriLog { get; set; }
     }
     public class ODSyncOutput
     {

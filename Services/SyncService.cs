@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using RestSharp;
 using RestSharp.Authenticators;
 using SyncToStaging.Helper.Models;
+using static SyncToStaging.Helper.Constants.SyncToStagingHelperConsts;
 
 namespace SyncToStaging.Helper.Services
 {
@@ -70,13 +71,20 @@ namespace SyncToStaging.Helper.Services
                         NotifyInput notifyInput = new NotifyInput();
                         notifyInput.Title = string.Empty;
                         notifyInput.Body = string.Empty;
+                        notifyInput.NotiType = input.IsUrgent == true ? NOTI_TYPE.URGENT : NOTI_TYPE.NORMAL;
+                        notifyInput.NavigatePath = input.OwnerCode;
                         notifyInput.OutletCodeList = outletCodes;
                         notifyInput.Purpose = $"SYNC_{input.DataType.ToUpper()}";
                         notifyInput.OwnerType = input.OwnerType;
                         notifyInput.OwnerCode = input.OwnerCode;
                         try
                         {
-                            await notifyService.NotifyToMobile(notifyInput);
+                            var notifyOutput = await notifyService.NotifyToMobile(notifyInput);
+                            if (notifyOutput != default )
+                            {
+                                output.NotifyMobileUriLog = notifyOutput.NotifyMobileUriLog;
+                                output.NotifyMobileParamLog = notifyOutput.NotifyMobileParamLog;
+                            }
                         }
                         catch (Exception _ex)
                         {

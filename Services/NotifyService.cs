@@ -1,11 +1,6 @@
 ﻿using Newtonsoft.Json;
 using RestSharp;
 using SyncToStaging.Helper.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SyncToStaging.Helper.Services
 {
@@ -13,15 +8,21 @@ namespace SyncToStaging.Helper.Services
     {
         public async Task<NotifyOutput> NotifyToMobile(NotifyInput input)
         {
+            string url = "https://fmcg-notification-api.rdos.online/api/v1/notification/expushnotificationoutlet";
             NotifyOutput output = new();
-            RestClient restClient = new RestClient("https://fmcg-notification-api.rdos.online/api/v1/notification/expushnotificationoutlet");
+            RestClient restClient = new RestClient(url);
             RestRequest request = new RestRequest();
             request.Method = Method.POST;
-            request.AddJsonBody(JsonConvert.SerializeObject(input));
+            string paramBody = JsonConvert.SerializeObject(input);
+            output.NotifyMobileParamLog = paramBody;
+            output.NotifyMobileUriLog = url;
+            request.AddJsonBody(paramBody);
             try
             {
                 var response = await restClient.ExecuteAsync<NotifyOutput>(request);
                 output = response.Data;
+                output.NotifyMobileParamLog = paramBody;
+                output.NotifyMobileUriLog = url;
                 return output;
             }
             catch (Exception ex)

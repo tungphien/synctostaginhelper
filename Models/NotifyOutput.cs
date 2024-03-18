@@ -11,5 +11,14 @@ namespace SyncToStaging.Helper.Models
         public IList<string> Messages { get; set; } = new List<string>();
         public object Data { get; set; }
         public bool Success { get; set; }
+        /// <summary>
+        /// Sẽ lưu thông tin input param gửi qua mobile
+        /// </summary>
+        public string NotifyMobileParamLog { get; set; }
+        /// <summary>
+        /// Sẽ lưu thông tin uri mobile đang gọi
+        /// </summary>
+        public string NotifyMobileUriLog { get; set; }
+
     }
 }
