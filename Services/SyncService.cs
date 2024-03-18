@@ -87,6 +87,9 @@ namespace SyncToStaging.Helper.Services
 
                 }
                 output.Success = false;
+                output.Messages.Add(response.StatusCode.ToString());
+                output.Messages.Add(response.StatusDescription.ToString());
+                output.Messages.Add(response.Content);
                 return output;
             }
             catch (Exception ex)
