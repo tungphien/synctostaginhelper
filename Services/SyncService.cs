@@ -36,6 +36,7 @@ namespace SyncToStaging.Helper.Services
             stagingInput.DataType = input.DataType.ToUpper();
             stagingInput.TempId = requestId;
             stagingInput.Data = input.Data;
+            stagingInput.IsCreateDataChange = input.IsCreateDataChange;
             request.AddJsonBody(JsonConvert.SerializeObject(stagingInput));
 
             switch (input.RequestType)
@@ -63,7 +64,7 @@ namespace SyncToStaging.Helper.Services
                     {
                         output = response.Data;
                     }
-                    if (response?.Data?.Success == true && input.NeedNotify)
+                    if (response?.Data?.Success == true && input.IsCreateDataChange && input.IsSendNotification)
                     {
                         // notify khi sync thành công
                         List<string> outletCodes = await GetOutletCodes<T, T1, T2>(input, dbContext);
@@ -80,7 +81,7 @@ namespace SyncToStaging.Helper.Services
                         try
                         {
                             var notifyOutput = await notifyService.NotifyToMobile(notifyInput);
-                            if (notifyOutput != default )
+                            if (notifyOutput != default)
                             {
                                 output.NotifyMobileUriLog = notifyOutput.NotifyMobileUriLog;
                                 output.NotifyMobileParamLog = notifyOutput.NotifyMobileParamLog;

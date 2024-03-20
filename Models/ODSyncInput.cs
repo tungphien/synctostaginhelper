@@ -29,13 +29,17 @@ namespace SyncToStaging.Helper.Models
         /// </summary>
         public Object Data { get; set; }
         /// <summary>
-        /// Default là true. Dùng cho case data reference không cần notify. Set NeedNotify=false
+        /// Default là true. Dùng cho case data reference không cần notify. Set IsSendNotification=false
         /// </summary>
-        public bool NeedNotify { get; set; } = true;
+        public bool IsSendNotification { get; set; } = true;
 
         /// <summary>
         /// IsUrgent dùng cho khi noify mobile
         /// </summary>
         public bool IsUrgent { get; set; } = true;
+        /// <summary>
+        /// IsCreateDataChange dùng gửi qua staging để check và tạo OSUserDataChange, và biến này sẽ dùng notification
+        /// </summary>
+        public bool IsCreateDataChange { get; set; } = true;
     }
 }

@@ -7,5 +7,6 @@
         public Guid TempId { get; set; }
         public string DataType { get; set; }
         public bool isUrgent { get; set; } = false;
+        public bool IsCreateDataChange { get; set; }
     }
 }
