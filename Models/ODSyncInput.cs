@@ -6,7 +6,7 @@ namespace SyncToStaging.Helper.Models
     {
         [Required]
         public string Token { get; set; }
-        [Required]
+        //[Required]
         public string DataType { get; set; }
         /// <summary>
         /// INSERT|UPDATE|DELETE|BULKINSERT
@@ -41,5 +41,10 @@ namespace SyncToStaging.Helper.Models
         /// IsCreateDataChange dùng gửi qua staging để check và tạo OSUserDataChange, và biến này sẽ dùng notification
         /// </summary>
         public bool IsCreateDataChange { get; set; } = true;
+        /// <summary>
+        /// Data lấy theo key: ODNotificationAPI
+        /// Value dạng: https://fmcg-notification-api.rdos.online/api/v1/
+        /// </summary>
+        public string NotificationBaseAPI { get; set; }
     }
 }

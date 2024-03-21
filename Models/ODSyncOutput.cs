@@ -15,6 +15,7 @@
         /// Sẽ lưu thông tin uri mobile đang gọi
         /// </summary>
         public string NotifyMobileUriLog { get; set; }
+        public Guid RequestId { get; set; }
     }
     public class ODSyncOutput
     {

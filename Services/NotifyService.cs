@@ -6,9 +6,9 @@ namespace SyncToStaging.Helper.Services
 {
     public class NotifyService
     {
-        public async Task<NotifyOutput> NotifyToMobile(NotifyInput input)
+        public async Task<NotifyOutput> NotifyToMobile(NotifyInput input, string notificationBaseAPI = "https://fmcg-notification-api.rdos.online/api/v1/")
         {
-            string url = "https://fmcg-notification-api.rdos.online/api/v1/notification/expushnotificationoutlet";
+            string url = $"{notificationBaseAPI}notification/expushnotificationoutlet";
             NotifyOutput output = new();
             RestClient restClient = new RestClient(url);
             RestRequest request = new RestRequest();

@@ -10,7 +10,7 @@ namespace SyncToStaging.Helper.Services
     public static class SyncService
     {
         /// <summary>
-        /// 
+        /// Hỗ trợ sync data từ OD qua Staging system
         /// </summary>
         /// <typeparam name="T">OSUsers</typeparam>
         /// <typeparam name="T1">OSOutlets</typeparam>
@@ -33,8 +33,9 @@ namespace SyncToStaging.Helper.Services
             request.AddHeader("Content-Type", "application/json");
             StagingBaseInputModel<object> stagingInput = new();
             var requestId = Guid.NewGuid();
-            stagingInput.DataType = input.DataType.ToUpper();
-            stagingInput.TempId = requestId;
+            output.RequestId = requestId;
+            stagingInput.DataType = input.DataType;
+            stagingInput.RequestId = requestId;
             stagingInput.Data = input.Data;
             stagingInput.IsCreateDataChange = input.IsCreateDataChange;
             request.AddJsonBody(JsonConvert.SerializeObject(stagingInput));
@@ -75,12 +76,12 @@ namespace SyncToStaging.Helper.Services
                         notifyInput.NotiType = input.IsUrgent == true ? NOTI_TYPE.URGENT : NOTI_TYPE.NORMAL;
                         notifyInput.NavigatePath = input.OwnerCode;
                         notifyInput.OutletCodeList = outletCodes;
-                        notifyInput.Purpose = $"SYNC_{input.DataType.ToUpper()}";
+                        notifyInput.Purpose = $"SYNC_{input.DataType}";
                         notifyInput.OwnerType = input.OwnerType;
                         notifyInput.OwnerCode = input.OwnerCode;
                         try
                         {
-                            var notifyOutput = await notifyService.NotifyToMobile(notifyInput);
+                            var notifyOutput = await notifyService.NotifyToMobile(notifyInput, input.NotificationBaseAPI);
                             if (notifyOutput != default)
                             {
                                 output.NotifyMobileUriLog = notifyOutput.NotifyMobileUriLog;
