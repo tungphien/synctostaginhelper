@@ -32,10 +32,9 @@ namespace SyncToStaging.Helper.Services
             RestRequest request = new();
             request.AddHeader("Content-Type", "application/json");
             StagingBaseInputModel<object> stagingInput = new();
-            var requestId = Guid.NewGuid();
-            output.RequestId = requestId;
+            output.TempId = input.TempId;
             stagingInput.DataType = input.DataType;
-            stagingInput.RequestId = requestId;
+            stagingInput.TempId = input.TempId;
             stagingInput.Data = input.Data;
             stagingInput.IsCreateDataChange = input.IsCreateDataChange;
             request.AddJsonBody(JsonConvert.SerializeObject(stagingInput));

@@ -4,7 +4,7 @@
     {
         public T Data { get; set; }
         public Guid? Id { get; set; }
-        public Guid RequestId { get; set; }
+        public Guid TempId { get; set; }
         public string DataType { get; set; }
         public bool isUrgent { get; set; } = false;
         public bool IsCreateDataChange { get; set; }

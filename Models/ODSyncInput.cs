@@ -5,6 +5,8 @@ namespace SyncToStaging.Helper.Models
     public class ODSyncInput
     {
         [Required]
+        public Guid TempId { get; set; }
+        [Required]
         public string Token { get; set; }
         //[Required]
         public string DataType { get; set; }
