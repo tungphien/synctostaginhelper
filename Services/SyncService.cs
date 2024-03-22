@@ -18,13 +18,20 @@ namespace SyncToStaging.Helper.Services
         /// <param name="input"></param>
         /// <param name="dbContext">DbContext must be define 3 DbSet OSUsers, OSOutlets, OSOutletLinked</param>
         /// <returns></returns>
-        public static async Task<BaseSyncOutput<ODSyncOutput>> Sync<T, T1, T2>(ODSyncInput input, DbContext dbContext)
+        public static async Task<BaseSyncOutput<ODSyncOutput>> Sync<T, T1, T2, T3, T4>(ODSyncInput input, DbContext dbContext)
             where T : class, IOsuser
             where T1 : class, IOsoutlet
             where T2 : class, IOsoutletLinked
+            where T3 : class, IOdsyncDataSetting
+            where T4 : class, IStagingSyncDataHistory
         {
 
             BaseSyncOutput<ODSyncOutput> output = new();
+            var setting = await GetOdsyncDataSetting<T3>(input.DataType, dbContext);
+            // nếu setting không active sẽ không sync
+            if (setting == default) return output;
+
+
             RestClient restClient = new RestClient(input.Url);
 
             restClient.Authenticator = new JwtAuthenticator($"{input.Token.Split(" ").Last()}");
@@ -32,11 +39,15 @@ namespace SyncToStaging.Helper.Services
             RestRequest request = new();
             request.AddHeader("Content-Type", "application/json");
             StagingBaseInputModel<object> stagingInput = new();
-            output.TempId = input.TempId;
-            stagingInput.DataType = input.DataType;
-            stagingInput.TempId = input.TempId;
+            Guid tempId = Guid.NewGuid();
+            output.TempId = tempId;
+            stagingInput.DataType = setting.OsdataType;
+            stagingInput.IsCreateDataChange = setting.IsCreateDataChange;
+            stagingInput.isUrgent = setting.IsNotiUrgent;
+            stagingInput.TempId = tempId;
             stagingInput.Data = input.Data;
-            stagingInput.IsCreateDataChange = input.IsCreateDataChange;
+
+
             request.AddJsonBody(JsonConvert.SerializeObject(stagingInput));
 
             switch (input.RequestType)
@@ -64,7 +75,7 @@ namespace SyncToStaging.Helper.Services
                     {
                         output = response.Data;
                     }
-                    if (response?.Data?.Success == true && input.IsCreateDataChange && input.IsSendNotification)
+                    if (response?.Data?.Success == true && stagingInput.IsCreateDataChange && input.IsSendNotification)
                     {
                         // notify khi sync thành công
                         List<string> outletCodes = await GetOutletCodes<T, T1, T2>(input, dbContext);
@@ -72,7 +83,7 @@ namespace SyncToStaging.Helper.Services
                         NotifyInput notifyInput = new NotifyInput();
                         notifyInput.Title = string.Empty;
                         notifyInput.Body = string.Empty;
-                        notifyInput.NotiType = input.IsUrgent == true ? NOTI_TYPE.URGENT : NOTI_TYPE.NORMAL;
+                        notifyInput.NotiType = stagingInput.isUrgent == true ? NOTI_TYPE.URGENT : NOTI_TYPE.NORMAL;
                         notifyInput.NavigatePath = input.OwnerCode;
                         notifyInput.OutletCodeList = outletCodes;
                         notifyInput.Purpose = $"SYNC_{input.DataType}";
@@ -92,24 +103,60 @@ namespace SyncToStaging.Helper.Services
                             throw _ex;
                         }
                     }
+                    if (response?.Data?.Success == false && response?.Data?.Messages?.Count > 0)
+                        await LogStagingSyncDataHistory<T4>(input, tempId, string.Join(",", response.Data.Messages), dbContext);
                     return output;
 
                 }
                 output.Success = false;
                 output.Messages.Add(response.StatusCode.ToString());
-                output.Messages.Add(response.StatusDescription.ToString());
+                output.Messages.Add(response.ErrorMessage);
                 output.Messages.Add(response.Content);
+
+                await LogStagingSyncDataHistory<T4>(input, tempId, response.ErrorMessage, dbContext);
                 return output;
             }
             catch (Exception ex)
             {
                 output.Success = false;
                 output.Messages.Add(ex.Message);
+                await LogStagingSyncDataHistory<T4>(input, tempId, ex.Message, dbContext);
                 return output;
             }
-
         }
+        private static async Task LogStagingSyncDataHistory<T4>(ODSyncInput input, Guid tempId, string message, DbContext dbContext)
+           where T4 : class, IStagingSyncDataHistory
+        {
+            try
+            {
+                var logData = (T4)Activator.CreateInstance(typeof(T4));
+                logData.Id = Guid.NewGuid();
+                logData.DataType = input.DataType;
+                logData.RequestType = input.RequestType;
+                logData.InsertStatus = LOG_HISTORY_STATUS.FAILED;
+                logData.TimeRunAdhoc = DateTime.Now;
+                logData.StartDate = DateTime.Now;
+                logData.EndDate = DateTime.Now;
+                logData.CreatedBy = "system";
+                logData.CreatedDate = DateTime.Now;
+                logData.UpdatedBy = "system";
+                logData.UpdatedDate = DateTime.Now;
+                logData.ErrorMessage = message;
+                logData.TempId = tempId.ToString();
 
+                dbContext.Set<T4>().Add(logData);
+                await dbContext.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+        private static async Task<T3> GetOdsyncDataSetting<T3>(string odDataType, DbContext dbContext)
+            where T3 : class, IOdsyncDataSetting
+        {
+            return await dbContext.Set<T3>().Where(d => d.OddataType == odDataType && d.Status == "ACTIVE").FirstOrDefaultAsync();
+        }
         private static async Task<List<string>> GetOutletCodes<T, T1, T2>(ODSyncInput input, DbContext dbContext)
             where T : class, IOsuser
             where T1 : class, IOsoutlet

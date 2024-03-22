@@ -5,10 +5,11 @@ namespace SyncToStaging.Helper.Models
     public class ODSyncInput
     {
         [Required]
-        public Guid TempId { get; set; }
-        [Required]
         public string Token { get; set; }
-        //[Required]
+        /// <summary>
+        /// OD DataType
+        /// </summary>
+        [Required]
         public string DataType { get; set; }
         /// <summary>
         /// INSERT|UPDATE|DELETE|BULKINSERT
@@ -35,14 +36,6 @@ namespace SyncToStaging.Helper.Models
         /// </summary>
         public bool IsSendNotification { get; set; } = true;
 
-        /// <summary>
-        /// IsUrgent dùng cho khi noify mobile
-        /// </summary>
-        public bool IsUrgent { get; set; } = true;
-        /// <summary>
-        /// IsCreateDataChange dùng gửi qua staging để check và tạo OSUserDataChange, và biến này sẽ dùng notification
-        /// </summary>
-        public bool IsCreateDataChange { get; set; } = true;
         /// <summary>
         /// Data lấy theo key: ODNotificationAPI
         /// Value dạng: https://fmcg-notification-api.rdos.online/api/v1/

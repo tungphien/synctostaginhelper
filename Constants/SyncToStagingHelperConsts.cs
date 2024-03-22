@@ -21,5 +21,9 @@ namespace SyncToStaging.Helper.Constants
             public static readonly string SHOWHOME = "SHOWHOME";
             public static readonly string URGENT = "URGENT";
         }
+        public class LOG_HISTORY_STATUS
+        {
+            public static readonly string FAILED = "FAILED";
+        }
     }
 }
