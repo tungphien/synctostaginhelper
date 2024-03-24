@@ -63,6 +63,7 @@ namespace SyncToStaging.Helper.Services
                     break;
                 case "BULKINSERT":
                     request.Method = Method.POST;
+                    stagingInput.DeletedIds = input.DeletedIds;
                     break;
             }
 

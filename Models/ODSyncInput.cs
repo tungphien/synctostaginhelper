@@ -41,5 +41,9 @@ namespace SyncToStaging.Helper.Models
         /// Value dạng: https://fmcg-notification-api.rdos.online/api/v1/
         /// </summary>
         public string NotificationBaseAPI { get; set; }
+        /// <summary>
+        /// Biến này sẽ chứa danh sách guid sẽ xóa khỏi hệ thống trước khi bulkinsert vào
+        /// </summary>
+        public List<Guid> DeletedIds { get; set; } = new();
     }
 }
