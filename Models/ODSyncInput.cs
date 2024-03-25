@@ -17,7 +17,9 @@ namespace SyncToStaging.Helper.Models
         [Required]
         public string RequestType { get; set; }
         [Required]
-        public string Url { get; set; }
+        public string StagingBaseAPICode { get; set; }
+        [Required]
+        public string StagingRequestPath { get; set; }
         /// <summary>
         /// PRINCIPAL|DISTRIBUTOR|OUTLET|SYSTEM
         /// </summary>
@@ -40,7 +42,7 @@ namespace SyncToStaging.Helper.Models
         /// Data lấy theo key: ODNotificationAPI
         /// Value dạng: https://fmcg-notification-api.rdos.online/api/v1/
         /// </summary>
-        public string NotificationBaseAPI { get; set; }
+        public string NotificationBaseAPICode { get; set; }
         /// <summary>
         /// Biến này sẽ chứa danh sách guid sẽ xóa khỏi hệ thống trước khi bulkinsert vào
         /// </summary>

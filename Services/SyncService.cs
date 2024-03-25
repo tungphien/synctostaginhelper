@@ -12,27 +12,42 @@ namespace SyncToStaging.Helper.Services
         /// <summary>
         /// Hỗ trợ sync data từ OD qua Staging system
         /// </summary>
-        /// <typeparam name="T">OSUsers</typeparam>
-        /// <typeparam name="T1">OSOutlets</typeparam>
-        /// <typeparam name="T2">OSOutletLinked</typeparam>
+        /// <typeparam name="T">IOsuser</typeparam>
+        /// <typeparam name="T1">IOSOutlets</typeparam>
+        /// <typeparam name="T2">IOSOutletLinked</typeparam>
+        /// <typeparam name="T3">IOdsyncDataSetting</typeparam>
+        /// <typeparam name="T4">IStagingSyncDataHistory</typeparam>
+        /// <typeparam name="T5">IServiceUrl</typeparam>
         /// <param name="input"></param>
-        /// <param name="dbContext">DbContext must be define 3 DbSet OSUsers, OSOutlets, OSOutletLinked</param>
+        /// <param name="dbContext">DbContext must be define 5 DbSet OSUsers, OSOutlets, OSOutletLinked, OdsyncDataSetting, StagingSyncDataHistory, EcoService</param>
         /// <returns></returns>
-        public static async Task<BaseSyncOutput<ODSyncOutput>> Sync<T, T1, T2, T3, T4>(ODSyncInput input, DbContext dbContext)
+        public static async Task<BaseSyncOutput<ODSyncOutput>> Sync<T, T1, T2, T3, T4, T5>(ODSyncInput input, DbContext dbContext)
             where T : class, IOsuser
             where T1 : class, IOsoutlet
             where T2 : class, IOsoutletLinked
             where T3 : class, IOdsyncDataSetting
             where T4 : class, IStagingSyncDataHistory
+            where T5 : class, IServiceUrl
+
         {
 
             BaseSyncOutput<ODSyncOutput> output = new();
             var setting = await GetOdsyncDataSetting<T3>(input.DataType, dbContext);
             // nếu setting không active sẽ không sync
-            if (setting == default) return output;
+            if (setting == default)
+            {
+                output.Messages.Add($"OdsyncDataSetting was not found for data type {input.DataType}");
+                return output;
+            }
+            // get service url
+            Dictionary<string, T5> serviceUrlDic = await GetServiceUrlAsDic<T5>(new List<string>() { input.StagingBaseAPICode, input.NotificationBaseAPICode }, dbContext);
+            if (serviceUrlDic?.Count < 2)
+            {
+                output.Messages.Add($"StagingBaseAPI or NotificationBaseAPI was not found");
+                return output;
+            }
 
-
-            RestClient restClient = new RestClient(input.Url);
+            RestClient restClient = new RestClient($"{serviceUrlDic[input.StagingBaseAPICode].URL}{input.StagingRequestPath}");
 
             restClient.Authenticator = new JwtAuthenticator($"{input.Token.Split(" ").Last()}");
 
@@ -87,12 +102,12 @@ namespace SyncToStaging.Helper.Services
                         notifyInput.NotiType = stagingInput.isUrgent == true ? NOTI_TYPE.URGENT : NOTI_TYPE.NORMAL;
                         notifyInput.NavigatePath = input.OwnerCode;
                         notifyInput.OutletCodeList = outletCodes;
-                        notifyInput.Purpose = $"SYNC_{input.DataType}";
+                        notifyInput.Purpose = $"SYNC_{stagingInput.DataType}";
                         notifyInput.OwnerType = input.OwnerType;
                         notifyInput.OwnerCode = input.OwnerCode;
                         try
                         {
-                            var notifyOutput = await notifyService.NotifyToMobile(notifyInput, input.NotificationBaseAPI);
+                            var notifyOutput = await notifyService.NotifyToMobile(notifyInput, serviceUrlDic[input.NotificationBaseAPICode].URL);
                             if (notifyOutput != default)
                             {
                                 output.NotifyMobileUriLog = notifyOutput.NotifyMobileUriLog;
@@ -153,12 +168,32 @@ namespace SyncToStaging.Helper.Services
 
             }
         }
-        private static async Task<T3> GetOdsyncDataSetting<T3>(string odDataType, DbContext dbContext)
+        /// <summary>
+        /// Trả về danh sách service url dạng dictionary<code, service_entity>
+        /// </summary>
+        /// <typeparam name="T5"></typeparam>
+        /// <param name="codes"></param>
+        /// <param name="dbContext"></param>
+        /// <returns></returns>
+        public static async Task<Dictionary<string, T5>> GetServiceUrlAsDic<T5>(List<string> codes, DbContext dbContext)
+            where T5 : class, IServiceUrl
+        {
+            return await dbContext.Set<T5>().Where(d => codes.Contains(d.Code)).ToDictionaryAsync(d => d.Code, m => m);
+        }
+        /// <summary>
+        /// Trả về OdsyncDataSetting theo OdDataType
+        /// </summary>
+        /// <typeparam name="T3"></typeparam>
+        /// <param name="odDataType"></param>
+        /// <param name="dbContext"></param>
+        /// <returns></returns>
+        public static async Task<T3> GetOdsyncDataSetting<T3>(string odDataType, DbContext dbContext)
             where T3 : class, IOdsyncDataSetting
         {
             return await dbContext.Set<T3>().Where(d => d.OddataType == odDataType && d.Status == "ACTIVE").FirstOrDefaultAsync();
         }
-        private static async Task<List<string>> GetOutletCodes<T, T1, T2>(ODSyncInput input, DbContext dbContext)
+
+        public static async Task<List<string>> GetOutletCodes<T, T1, T2>(ODSyncInput input, DbContext dbContext)
             where T : class, IOsuser
             where T1 : class, IOsoutlet
             where T2 : class, IOsoutletLinked
