@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using static SyncToStaging.Helper.Constants.SyncToStagingHelperConsts;
 
 namespace SyncToStaging.Helper.Models
 {
@@ -23,12 +24,11 @@ namespace SyncToStaging.Helper.Models
         /// <summary>
         /// PRINCIPAL|DISTRIBUTOR|OUTLET|SYSTEM
         /// </summary>
-        [Required]
-        public string OwnerType { get; set; }
+        public string OwnerType { get; set; } = OWNER_TYPE.SYSTEM;
         /// <summary>
         /// PRINCIPAL CODE|DISTRIBUTOR CODE|OUTLET CODE| NULL
         /// </summary>
-        public string OwnerCode { get; set; }
+        public string OwnerCode { get; set; } = null;
         /// <summary>
         /// Đối với case DELETE thì sẽ truyền Id record vào dạng string
         /// </summary>
