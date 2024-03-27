@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SyncToStaging.Helper.Models
 {
-    public interface IOdsyncDataSetting
+    public class OdsyncDataSettingModel
     {
         public Guid Id { get; set; }
 

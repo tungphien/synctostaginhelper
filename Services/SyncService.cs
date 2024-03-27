@@ -3,44 +3,53 @@ using Newtonsoft.Json;
 using RestSharp;
 using RestSharp.Authenticators;
 using SyncToStaging.Helper.Models;
+using System.Reflection;
 using static SyncToStaging.Helper.Constants.SyncToStagingHelperConsts;
+using SyncToStaging.Helper.Constants;
 
 namespace SyncToStaging.Helper.Services
 {
     public static class SyncService
     {
-        /// <summary>
-        /// Hỗ trợ sync data từ OD qua Staging system
-        /// </summary>
-        /// <typeparam name="T">IOsuser</typeparam>
-        /// <typeparam name="T1">IOSOutlets</typeparam>
-        /// <typeparam name="T2">IOSOutletLinked</typeparam>
-        /// <typeparam name="T3">IOdsyncDataSetting</typeparam>
-        /// <typeparam name="T4">IStagingSyncDataHistory</typeparam>
-        /// <typeparam name="T5">IServiceUrl</typeparam>
-        /// <param name="input"></param>
-        /// <param name="dbContext">DbContext must be define 5 DbSet OSUsers, OSOutlets, OSOutletLinked, OdsyncDataSetting, StagingSyncDataHistory, EcoService</param>
-        /// <returns></returns>
-        public static async Task<BaseSyncOutput<ODSyncOutput>> Sync<T, T1, T2, T3, T4, T5>(ODSyncInput input, DbContext dbContext)
-            where T : class, IOsuser
-            where T1 : class, IOsoutlet
-            where T2 : class, IOsoutletLinked
-            where T3 : class, IOdsyncDataSetting
-            where T4 : class, IStagingSyncDataHistory
-            where T5 : class, IServiceUrl
+        private static readonly List<string> REQUIRED_TABLES = new List<string>()
+        {
+            SyncToStagingHelperConsts.ENTITY_TABLE.Osusers,
+            SyncToStagingHelperConsts.ENTITY_TABLE.Osoutlets,
+            SyncToStagingHelperConsts.ENTITY_TABLE.OsoutletLinkeds,
+            SyncToStagingHelperConsts.ENTITY_TABLE.OdsyncDataSettings,
+            SyncToStagingHelperConsts.ENTITY_TABLE.Services,
+            SyncToStagingHelperConsts.ENTITY_TABLE.StagingSyncDataHistories
+        };
 
+        /// <summary>
+        /// Hỗ trợ sync data từ OD qua Staging system.
+        /// DbContext must be define 6 DbSet: Osusers, Osoutlets, OsoutletLinkeds, OdsyncDataSettings, Services, StagingSyncDataHistories
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="dbContext"></param>
+        /// <returns></returns>
+        public static async Task<BaseSyncOutput<ODSyncOutput>> OneShopStagingSync(ODSyncInput input, DbContext dbContext)
         {
 
             BaseSyncOutput<ODSyncOutput> output = new();
-            var setting = await GetOdsyncDataSetting<T3>(input.DataType, dbContext);
+
+            // validate dbContext
+            var dbsets = GetRequiredDbSetProperties(dbContext);
+            if (dbsets?.Count != REQUIRED_TABLES.Count)
+            {
+                throw new Exception($"DbContext required 6 DbSet: {string.Join(", ", REQUIRED_TABLES)}");
+            }
+           
+            var setting = await GetOdsyncDataSetting(input.DataType, dbContext);
             // nếu setting không active sẽ không sync
             if (setting == default)
             {
                 output.Messages.Add($"OdsyncDataSetting was not found for data type {input.DataType}");
                 return output;
             }
+
             // get service url
-            Dictionary<string, T5> serviceUrlDic = await GetServiceUrlAsDic<T5>(new List<string>() { input.StagingBaseAPICode, input.NotificationBaseAPICode }, dbContext);
+            Dictionary<string, ServiceUrlModel> serviceUrlDic = await GetServiceUrlAsDic(new List<string>() { input.StagingBaseAPICode, input.NotificationBaseAPICode }, dbContext);
             if (serviceUrlDic?.Count < 2)
             {
                 output.Messages.Add($"StagingBaseAPI or NotificationBaseAPI was not found");
@@ -82,6 +91,8 @@ namespace SyncToStaging.Helper.Services
                     break;
             }
 
+            var logPropertyType = dbsets.Where(d => d.Name == SyncToStagingHelperConsts.ENTITY_TABLE.StagingSyncDataHistories).FirstOrDefault();
+
             try
             {
                 var response = await restClient.ExecuteAsync<BaseSyncOutput<ODSyncOutput>>(request);
@@ -94,7 +105,7 @@ namespace SyncToStaging.Helper.Services
                     if (response?.Data?.Success == true && stagingInput.IsCreateDataChange && input.IsSendNotification)
                     {
                         // notify khi sync thành công
-                        List<string> outletCodes = await GetOutletCodes<T, T1, T2>(input, dbContext);
+                        List<string> outletCodes = await GetOutletCodes(dbContext, input.OwnerType, input.OwnerCode);
                         NotifyService notifyService = new NotifyService();
                         NotifyInput notifyInput = new NotifyInput();
                         notifyInput.Title = string.Empty;
@@ -120,7 +131,7 @@ namespace SyncToStaging.Helper.Services
                         }
                     }
                     if (response?.Data?.Success == false && response?.Data?.Messages?.Count > 0)
-                        await LogStagingSyncDataHistory<T4>(input, tempId, string.Join(",", response.Data.Messages), dbContext);
+                        await LogStagingSyncDataHistory(input, tempId, string.Join(",", response.Data.Messages), dbContext, logPropertyType);
                     return output;
 
                 }
@@ -129,43 +140,87 @@ namespace SyncToStaging.Helper.Services
                 output.Messages.Add(response.ErrorMessage);
                 output.Messages.Add(response.Content);
 
-                await LogStagingSyncDataHistory<T4>(input, tempId, response.ErrorMessage, dbContext);
+                await LogStagingSyncDataHistory(input, tempId, response.ErrorMessage, dbContext, logPropertyType);
                 return output;
             }
             catch (Exception ex)
             {
                 output.Success = false;
                 output.Messages.Add(ex.Message);
-                await LogStagingSyncDataHistory<T4>(input, tempId, ex.Message, dbContext);
+                await LogStagingSyncDataHistory(input, tempId, ex.Message, dbContext, logPropertyType);
                 return output;
             }
         }
-        private static async Task LogStagingSyncDataHistory<T4>(ODSyncInput input, Guid tempId, string message, DbContext dbContext)
-           where T4 : class, IStagingSyncDataHistory
+        public static IQueryable<TEntity> QueryDataByTableName<TEntity>(DbContext dbContext, string tableName) where TEntity : class
+        {
+            // Use reflection to get DbSet property by name
+            var dbSetProperty = dbContext.GetType().GetProperty(tableName);
+            if (dbSetProperty != null && dbSetProperty.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
+            {
+                var dbSet = dbSetProperty.GetValue(dbContext);
+                if (dbSet != null)
+                {
+                    // Return IQueryable data from DbSet
+                    return ((IQueryable<TEntity>)dbSet);
+                }
+            }
+
+            // DbSet with the given name not found or not compatible
+            throw new ArgumentException($"DbSet '{tableName}' not found or not compatible.", nameof(tableName));
+        }
+        private static bool TrySetProperty(object obj, string property, object value)
+        {
+            var prop = obj.GetType().GetProperty(property, BindingFlags.Public | BindingFlags.Instance);
+            if (prop != null && prop.CanWrite)
+            {
+                prop.SetValue(obj, value, null);
+                return true;
+            }
+            return false;
+        }
+        public static List<PropertyInfo> GetRequiredDbSetProperties(this DbContext context)
+        {
+            return context.GetType().GetProperties()
+                .Where(property => property.PropertyType.IsGenericType &&
+                typeof(DbSet<>).IsAssignableFrom(property.PropertyType.GetGenericTypeDefinition()) &&
+                REQUIRED_TABLES.Contains(property.Name)
+                ).Select(property => property).ToList();
+        }
+        private static async Task LogStagingSyncDataHistory(ODSyncInput input, Guid tempId, string message, DbContext dbContext, PropertyInfo? propertyInfo)
         {
             try
             {
-                var logData = (T4)Activator.CreateInstance(typeof(T4));
-                logData.Id = Guid.NewGuid();
-                logData.DataType = input.DataType;
-                logData.RequestType = input.RequestType;
-                logData.InsertStatus = LOG_HISTORY_STATUS.FAILED;
-                logData.TimeRunAdhoc = DateTime.Now;
-                logData.StartDate = DateTime.Now;
-                logData.EndDate = DateTime.Now;
-                logData.CreatedBy = "system";
-                logData.CreatedDate = DateTime.Now;
-                logData.UpdatedBy = "system";
-                logData.UpdatedDate = DateTime.Now;
-                logData.ErrorMessage = message;
-                logData.TempId = tempId.ToString();
+                if (propertyInfo?.PropertyType?.IsGenericType == true && propertyInfo?.PropertyType?.GetGenericTypeDefinition() == typeof(DbSet<>))
+                {
+                    Type entityType = propertyInfo.PropertyType.GetGenericArguments()[0];
+                    dynamic logData = Activator.CreateInstance(entityType); // Create new instance using reflection
+                    DateTime now = DateTime.Now;
+                    TrySetProperty(logData, "Id", Guid.NewGuid());
+                    TrySetProperty(logData, "DataType", input.DataType);
+                    TrySetProperty(logData, "RequestType", input.RequestType);
+                    TrySetProperty(logData, "InsertStatus", LOG_HISTORY_STATUS.FAILED);
+                    TrySetProperty(logData, "TimeRunAdhoc", now);
+                    TrySetProperty(logData, "StartDate", now);
+                    TrySetProperty(logData, "EndDate", now);
+                    TrySetProperty(logData, "CreatedBy", "system");
+                    TrySetProperty(logData, "CreatedDate", now);
+                    TrySetProperty(logData, "UpdatedBy", "system");
+                    TrySetProperty(logData, "UpdatedDate", now);
+                    TrySetProperty(logData, "ErrorMessage", message);
+                    TrySetProperty(logData, "TempId", tempId.ToString());
 
-                dbContext.Set<T4>().Add(logData);
-                await dbContext.SaveChangesAsync();
+                    dynamic dbSet = propertyInfo.GetValue(dbContext); // Get DbSet
+                    dbSet.Add(logData); // Add new entity to DbSet
+                    dbContext.SaveChanges(); // Save changes to the database
+                }
+                else
+                {
+                    throw new ArgumentException($"Property {propertyInfo.Name} is not a DbSet.");
+                }
             }
             catch (Exception ex)
             {
-
+                throw ex;
             }
         }
         /// <summary>
@@ -175,11 +230,15 @@ namespace SyncToStaging.Helper.Services
         /// <param name="codes"></param>
         /// <param name="dbContext"></param>
         /// <returns></returns>
-        public static async Task<Dictionary<string, T5>> GetServiceUrlAsDic<T5>(List<string> codes, DbContext dbContext)
-            where T5 : class, IServiceUrl
+        public static async Task<Dictionary<string, ServiceUrlModel>> GetServiceUrlAsDic(List<string> codes, DbContext dbContext)
         {
-            return await dbContext.Set<T5>().Where(d => codes.Contains(d.Code)).ToDictionaryAsync(d => d.Code, m => m);
+            return await QueryDataByTableName<object>(dbContext, SyncToStagingHelperConsts.ENTITY_TABLE.Services).Where(d => codes.Contains(EF.Property<string>(d, "Code"))).Select(x => new ServiceUrlModel
+            {
+                Code = EF.Property<string>(x, "Code"),
+                URL = EF.Property<string>(x, "URL"),
+            }).ToDictionaryAsync(d => d.Code, m => m);
         }
+
         /// <summary>
         /// Trả về OdsyncDataSetting theo OdDataType
         /// </summary>
@@ -187,51 +246,53 @@ namespace SyncToStaging.Helper.Services
         /// <param name="odDataType"></param>
         /// <param name="dbContext"></param>
         /// <returns></returns>
-        public static async Task<T3> GetOdsyncDataSetting<T3>(string odDataType, DbContext dbContext)
-            where T3 : class, IOdsyncDataSetting
+        public static async Task<OdsyncDataSettingModel> GetOdsyncDataSetting(string odDataType, DbContext dbContext)
         {
-            return await dbContext.Set<T3>().Where(d => d.OddataType == odDataType && d.Status == "ACTIVE").FirstOrDefaultAsync();
+            return await QueryDataByTableName<object>(dbContext, SyncToStagingHelperConsts.ENTITY_TABLE.OdsyncDataSettings).Where(d => EF.Property<string>(d, "OddataType") == odDataType && EF.Property<string>(d, "Status") == STATUS.ACTIVE).Select(x => new OdsyncDataSettingModel
+            {
+                OddataType = EF.Property<string>(x, "OddataType"),
+                OsdataType = EF.Property<string>(x, "OsdataType"),
+                IsCreateDataChange = EF.Property<bool>(x, "IsCreateDataChange"),
+                IsNotiUrgent = EF.Property<bool>(x, "IsNotiUrgent")
+            }).FirstOrDefaultAsync();
         }
 
-        public static async Task<List<string>> GetOutletCodes<T, T1, T2>(ODSyncInput input, DbContext dbContext)
-            where T : class, IOsuser
-            where T1 : class, IOsoutlet
-            where T2 : class, IOsoutletLinked
+        public static async Task<List<string>> GetOutletCodes(DbContext dbContext, string ownerType, string ownerCode)
         {
             List<string> outletCodes = new();
             try
             {
-                switch (input.OwnerType)
+                switch (ownerType)
                 {
                     case "OUTLET":
-                        outletCodes = new List<string> { input.OwnerCode };
+                        outletCodes = new List<string> { ownerCode };
                         break;
                     case "DISTRIBUTOR":
-                        outletCodes = await (from oso in dbContext.Set<T1>()
-                                             join osu in dbContext.Set<T>()
-                                             on oso.PhoneNumber equals osu.UserName
-                                             join osl in dbContext.Set<T2>()
-                                             on oso.OutletCode equals osl.OutletCode
-                                             where osu.UserName != null &&
-                                             oso.Status == "ACTIVE" &&
-                                             osl.Status == "ACTIVE" &&
-                                             osl.OutletType == "OFFICIAL" &&
-                                             osl.DistributorCode == input.OwnerCode
-                                             select oso.OutletCode).ToListAsync();
+                        outletCodes = await (from oso in QueryDataByTableName<object>(dbContext, SyncToStagingHelperConsts.ENTITY_TABLE.OdsyncDataSettings)
+                                             join osu in QueryDataByTableName<object>(dbContext, SyncToStagingHelperConsts.ENTITY_TABLE.Osusers)
+                                             on EF.Property<string>(oso, "PhoneNumber") equals EF.Property<string>(osu, "UserName")
+                                             join osl in QueryDataByTableName<object>(dbContext, SyncToStagingHelperConsts.ENTITY_TABLE.OsoutletLinkeds)
+                                             on EF.Property<string>(oso, "OutletCode") equals EF.Property<string>(osl, "OutletCode")
+                                             where EF.Property<string>(osu, "UserName") != null &&
+                                             EF.Property<string>(oso, "Status") == STATUS.ACTIVE &&
+                                             EF.Property<string>(osl, "Status") == STATUS.ACTIVE &&
+                                             EF.Property<string>(osl, "OutletType") == "OFFICIAL" &&
+                                             EF.Property<string>(osl, "DistributorCode") == ownerCode
+                                             select EF.Property<string>(oso, "OutletCode")).ToListAsync();
                         break;
                     default:
-                        outletCodes = await (from oso in dbContext.Set<T1>()
-                                             join osu in dbContext.Set<T>()
-                                             on oso.PhoneNumber equals osu.UserName
-                                             where osu.UserName != null && oso.Status == "ACTIVE"
-                                             select oso.OutletCode).ToListAsync();
+                        outletCodes = await (from oso in QueryDataByTableName<object>(dbContext, SyncToStagingHelperConsts.ENTITY_TABLE.Osoutlets)
+                                             join osu in QueryDataByTableName<object>(dbContext, SyncToStagingHelperConsts.ENTITY_TABLE.Osusers)
+                                             on EF.Property<string>(oso, "PhoneNumber") equals EF.Property<string>(osu, "UserName")
+                                             where EF.Property<string>(osu, "UserName") != null && EF.Property<string>(oso, "Status") == STATUS.ACTIVE
+                                             select EF.Property<string>(oso, "OutletCode")).ToListAsync();
                         break;
                 }
 
             }
             catch (Exception ex)
             {
-
+                throw ex;
             }
             return outletCodes;
         }

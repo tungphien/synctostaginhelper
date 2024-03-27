@@ -32,5 +32,18 @@ namespace SyncToStaging.Helper.Constants
         {
             public static readonly string FAILED = "FAILED";
         }
+        public class ENTITY_TABLE
+        {
+            public static readonly string Osusers = "Osusers";
+            public static readonly string Osoutlets = "Osoutlets";
+            public static readonly string OsoutletLinkeds = "OsoutletLinkeds";
+            public static readonly string OdsyncDataSettings = "OdsyncDataSettings";
+            public static readonly string Services = "Services";
+            public static readonly string StagingSyncDataHistories = "StagingSyncDataHistories";
+        }
+        public class STATUS
+        {
+            public static readonly string ACTIVE = "ACTIVE";
+        }
     }
 }

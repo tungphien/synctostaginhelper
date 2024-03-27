@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SyncToStaging.Helper.Models
 {
-    public interface IServiceUrl
+    public class ServiceUrlModel
     {
         [Key]
         public Guid Id { get; set; }
