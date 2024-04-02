@@ -108,12 +108,12 @@ namespace SyncToStaging.Helper.Services
 						List<string> outletCodes = await GetOutletCodes(dbContext, input.OwnerType, input.OwnerCode);
 						NotifyService notifyService = new NotifyService();
 						NotifyInput notifyInput = new NotifyInput();
-						notifyInput.Title = string.Empty;
-						notifyInput.Body = string.Empty;
-						notifyInput.NotiType = stagingInput.isUrgent == true ? NOTI_TYPE.URGENT : NOTI_TYPE.NORMAL;
+						notifyInput.Title = $"SYNC_{stagingInput.DataType}";
+                        notifyInput.Body = $"SYNC_{stagingInput.DataType}";
+                        notifyInput.NotiType = stagingInput.isUrgent == true ? NOTI_TYPE.URGENT : NOTI_TYPE.NORMAL;
 						notifyInput.NavigatePath = input.OwnerCode;
 						notifyInput.OutletCodeList = outletCodes;
-						notifyInput.Purpose = $"SYNC_{stagingInput.DataType}";
+						notifyInput.Purpose = "SYNC_DATA";
 						notifyInput.OwnerType = input.OwnerType;
 						notifyInput.OwnerCode = input.OwnerCode;
 						try
