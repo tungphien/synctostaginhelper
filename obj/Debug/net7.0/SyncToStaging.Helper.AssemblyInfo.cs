@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SyncToStaging.Helper")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.1.7.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.1.7+9fb2137ad512acf662c91e848a874ea053053527")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.1.7+73ce43e3dd12d02e0dba9fa78f1c4d59c3605082")]
 [assembly: System.Reflection.AssemblyProductAttribute("SyncToStaging.Helper")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SyncToStaging.Helper")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.1.7.0")]

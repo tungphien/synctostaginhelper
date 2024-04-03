@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	<PackageId>SyncToStaging.Helper</PackageId>
-    <Version>1.1.7</Version> <!-- Update this version number -->
+    <Version>1.1.8</Version> <!-- Update this version number -->
   </PropertyGroup>
 
   <ItemGroup>
