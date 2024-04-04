@@ -253,11 +253,14 @@ namespace SyncToStaging.Helper.Services
         /// <returns></returns>
         public static async Task<Dictionary<string, ServiceUrlModel>> GetServiceUrlAsDic(List<string> codes, DbContext dbContext)
         {
-            return await QueryDataByTableName<object>(dbContext, ENTITY_TABLE.Services).Where(d => codes.Contains(EF.Property<string>(d, "Code"))).Select(x => new ServiceUrlModel
-            {
-                Code = EF.Property<string>(x, "Code"),
-                Url = EF.Property<string>(x, "Url"),
-            }).ToDictionaryAsync(d => d.Code, m => m);
+            return await QueryDataByTableName<object>(dbContext, ENTITY_TABLE.Services)
+                .Where(d => codes.Contains(EF.Property<string>(d, "Code")))
+                .GroupBy(d => EF.Property<string>(d, "Code"))
+                .Select(d => new ServiceUrlModel
+                {
+                    Code = EF.Property<string>(d.First(), "Code"),
+                    Url = EF.Property<string>(d.First(), "Url"),
+                }).ToDictionaryAsync(d => d.Code, m => m);
         }
 
         /// <summary>
