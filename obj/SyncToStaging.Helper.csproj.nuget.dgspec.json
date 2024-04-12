@@ -5,7 +5,7 @@
   },
   "projects": {
     "D:\\Working\\DigiTech\\OD\\1SOD.SyncToStaging.Helper\\SyncToStaging.Helper\\SyncToStaging.Helper.csproj": {
-      "version": "1.1.8",
+      "version": "1.1.9",
       "restore": {
         "projectUniqueName": "D:\\Working\\DigiTech\\OD\\1SOD.SyncToStaging.Helper\\SyncToStaging.Helper\\SyncToStaging.Helper.csproj",
         "projectName": "SyncToStaging.Helper",
@@ -47,6 +47,11 @@
           "targetAlias": "net7.0",
           "dependencies": {
             "Microsoft.EntityFrameworkCore": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[7.0.14, )"
+            },
+            "Microsoft.EntityFrameworkCore.Relational": {
               "suppressParent": "All",
               "target": "Package",
               "version": "[7.0.14, )"

@@ -7,6 +7,7 @@ using System.Reflection;
 using static SyncToStaging.Helper.Constants.SyncToStagingHelperConsts;
 using SyncToStaging.Helper.Constants;
 using System;
+using System.Text.RegularExpressions;
 
 namespace SyncToStaging.Helper.Services
 {
@@ -48,6 +49,8 @@ namespace SyncToStaging.Helper.Services
         {
 
             BaseSyncOutput<ODSyncOutput> output = new();
+
+            SwitchToPublicSchema(dbContext);
 
             // validate dbContext
             var dbsets = GetRequiredDbSetProperties(dbContext);
@@ -172,8 +175,18 @@ namespace SyncToStaging.Helper.Services
             string classNameByTableName = dbContext.GetType().GetProperty(tableName).ToString();
             return dbContext.Model.GetEntityTypes().Any(d => classNameByTableName.Contains(d.Name) && d.FindProperty(propertyName) != null);
         }
-        public static IQueryable<TEntity> QueryDataByTableName<TEntity>(DbContext dbContext, string tableName) where TEntity : class
+        private static void SwitchToPublicSchema(DbContext dbContext)
         {
+            var currentConnectionString = dbContext.Database.GetConnectionString();
+            string pattern = @";SearchPath=(.*);";
+            if (currentConnectionString.Contains("SearchPath="))
+            {
+                currentConnectionString = Regex.Replace(currentConnectionString, pattern, ";SearchPath=public");
+            }
+            dbContext.Database.SetConnectionString(currentConnectionString);
+        }
+        public static IQueryable<TEntity> QueryDataByTableName<TEntity>(DbContext dbContext, string tableName) where TEntity : class
+        {          
             // Use reflection to get DbSet property by name
             var dbSetProperty = dbContext.GetType().GetProperty(tableName);
             if (dbSetProperty != null && dbSetProperty.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
@@ -292,7 +305,7 @@ namespace SyncToStaging.Helper.Services
                         outletCodes = new List<string> { ownerCode };
                         break;
                     case "DISTRIBUTOR":
-                        outletCodes = await (from oso in QueryDataByTableName<object>(dbContext, ENTITY_TABLE.OdsyncDataSettings)
+                        outletCodes = await (from oso in QueryDataByTableName<object>(dbContext, ENTITY_TABLE.Osoutlets)
                                              join osu in QueryDataByTableName<object>(dbContext, ENTITY_TABLE.Osusers)
                                              on EF.Property<string>(oso, "PhoneNumber") equals EF.Property<string>(osu, "UserName")
                                              join osl in QueryDataByTableName<object>(dbContext, ENTITY_TABLE.OsoutletLinkeds)
