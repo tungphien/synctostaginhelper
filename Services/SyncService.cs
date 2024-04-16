@@ -142,11 +142,15 @@ namespace SyncToStaging.Helper.Services
                             {
                                 output.NotifyMobileUriLog = notifyOutput.NotifyMobileUriLog;
                                 output.NotifyMobileParamLog = notifyOutput.NotifyMobileParamLog;
+                                if (notifyOutput?.Success == false)
+                                {
+                                    await LogStagingSyncDataHistory(input, tempId, string.Join(",", notifyOutput.Messages), dbContext, logPropertyType);
+                                }
                             }
                         }
                         catch (Exception _ex)
                         {
-                            throw _ex;
+                            await LogStagingSyncDataHistory(input, tempId, $"Notification to mobile exception: {_ex.Message}", dbContext, logPropertyType);
                         }
                     }
                     if (response?.Data?.Success == false && response?.Data?.Messages?.Count > 0)
@@ -186,7 +190,7 @@ namespace SyncToStaging.Helper.Services
             dbContext.Database.SetConnectionString(currentConnectionString);
         }
         public static IQueryable<TEntity> QueryDataByTableName<TEntity>(DbContext dbContext, string tableName) where TEntity : class
-        {          
+        {
             // Use reflection to get DbSet property by name
             var dbSetProperty = dbContext.GetType().GetProperty(tableName);
             if (dbSetProperty != null && dbSetProperty.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))

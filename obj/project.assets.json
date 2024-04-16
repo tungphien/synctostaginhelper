@@ -674,7 +674,7 @@
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
-    "version": "1.1.9",
+    "version": "1.2.0",
     "restore": {
       "projectUniqueName": "D:\\Working\\DigiTech\\OD\\1SOD.SyncToStaging.Helper\\SyncToStaging.Helper\\SyncToStaging.Helper.csproj",
       "projectName": "SyncToStaging.Helper",

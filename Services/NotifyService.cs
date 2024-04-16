@@ -20,7 +20,15 @@ namespace SyncToStaging.Helper.Services
             try
             {
                 var response = await restClient.ExecuteAsync<NotifyOutput>(request);
-                output = response.Data;
+                if (response?.Data != null)
+                {
+                    output = response.Data;
+                }
+                else
+                {
+                    output.Messages.Add(response.StatusCode.ToString());
+                    output.Messages.Add(response.StatusDescription);
+                }
                 output.NotifyMobileParamLog = paramBody;
                 output.NotifyMobileUriLog = url;
                 return output;
