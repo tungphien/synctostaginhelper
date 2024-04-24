@@ -5,14 +5,14 @@ using RestSharp.Authenticators;
 using SyncToStaging.Helper.Models;
 using System.Reflection;
 using static SyncToStaging.Helper.Constants.SyncToStagingHelperConsts;
-using SyncToStaging.Helper.Constants;
-using System;
 using System.Text.RegularExpressions;
 
 namespace SyncToStaging.Helper.Services
 {
     public static class SyncService
     {
+        private static readonly string PUBLIC_SCHEMA = "public";
+        private static string PRIVATE_SCHEMA = string.Empty;
         private static readonly List<string> REQUIRED_TABLES = new List<string>()
         {
             ENTITY_TABLE.Osusers,
@@ -49,8 +49,6 @@ namespace SyncToStaging.Helper.Services
         {
 
             BaseSyncOutput<ODSyncOutput> output = new();
-
-            SwitchToPublicSchema(dbContext);
 
             // validate dbContext
             var dbsets = GetRequiredDbSetProperties(dbContext);
@@ -185,7 +183,25 @@ namespace SyncToStaging.Helper.Services
             string pattern = @";SearchPath=(.*);";
             if (currentConnectionString.Contains("SearchPath="))
             {
-                currentConnectionString = Regex.Replace(currentConnectionString, pattern, ";SearchPath=public");
+                Match match = Regex.Match(currentConnectionString, pattern);
+                if (match.Success)
+                {
+                    string group1 = match.Groups[1].Value;
+                    PRIVATE_SCHEMA = string.Empty;
+                    if (group1 != PUBLIC_SCHEMA)
+                        PRIVATE_SCHEMA = group1;
+                }
+                currentConnectionString = Regex.Replace(currentConnectionString, pattern, $";SearchPath={PUBLIC_SCHEMA};");
+            }
+            dbContext.Database.SetConnectionString(currentConnectionString);
+        }
+        private static void SwitchToPrivateSchema(DbContext dbContext)
+        {
+            var currentConnectionString = dbContext.Database.GetConnectionString();
+            string pattern = @";SearchPath=(.*);";
+            if (currentConnectionString.Contains("SearchPath=") && !string.IsNullOrEmpty(PRIVATE_SCHEMA))
+            {
+                currentConnectionString = Regex.Replace(currentConnectionString, pattern, $";SearchPath={PRIVATE_SCHEMA};");
             }
             dbContext.Database.SetConnectionString(currentConnectionString);
         }
@@ -226,6 +242,7 @@ namespace SyncToStaging.Helper.Services
         }
         private static async Task LogStagingSyncDataHistory(ODSyncInput input, Guid tempId, string message, DbContext dbContext, PropertyInfo? propertyInfo)
         {
+            SwitchToPublicSchema(dbContext);
             try
             {
                 if (propertyInfo?.PropertyType?.IsGenericType == true && propertyInfo?.PropertyType?.GetGenericTypeDefinition() == typeof(DbSet<>))
@@ -258,8 +275,10 @@ namespace SyncToStaging.Helper.Services
             }
             catch (Exception ex)
             {
+                SwitchToPrivateSchema(dbContext);
                 throw ex;
             }
+            SwitchToPrivateSchema(dbContext);
         }
         /// <summary>
         /// Trả về danh sách service url dạng dictionary<code, service_entity>
@@ -270,7 +289,8 @@ namespace SyncToStaging.Helper.Services
         /// <returns></returns>
         public static async Task<Dictionary<string, ServiceUrlModel>> GetServiceUrlAsDic(List<string> codes, DbContext dbContext)
         {
-            return await QueryDataByTableName<object>(dbContext, ENTITY_TABLE.Services)
+            SwitchToPublicSchema(dbContext);
+            var data = await QueryDataByTableName<object>(dbContext, ENTITY_TABLE.Services)
                 .Where(d => codes.Contains(EF.Property<string>(d, "Code")))
                 .GroupBy(d => EF.Property<string>(d, "Code"))
                 .Select(d => new ServiceUrlModel
@@ -278,6 +298,8 @@ namespace SyncToStaging.Helper.Services
                     Code = EF.Property<string>(d.First(), "Code"),
                     Url = EF.Property<string>(d.First(), "Url"),
                 }).ToDictionaryAsync(d => d.Code, m => m);
+            return data;
+            SwitchToPrivateSchema(dbContext);
         }
 
         /// <summary>
@@ -289,17 +311,23 @@ namespace SyncToStaging.Helper.Services
         /// <returns></returns>
         public static async Task<OdsyncDataSettingModel> GetOdsyncDataSetting(string odDataType, DbContext dbContext)
         {
-            return await QueryDataByTableName<object>(dbContext, ENTITY_TABLE.OdsyncDataSettings).Where(d => EF.Property<string>(d, "OddataType") == odDataType && EF.Property<string>(d, "Status") == STATUS.ACTIVE).Select(x => new OdsyncDataSettingModel
+            SwitchToPublicSchema(dbContext);
+
+            var data = await QueryDataByTableName<object>(dbContext, ENTITY_TABLE.OdsyncDataSettings).Where(d => EF.Property<string>(d, "OddataType") == odDataType && EF.Property<string>(d, "Status") == STATUS.ACTIVE).Select(x => new OdsyncDataSettingModel
             {
                 OddataType = EF.Property<string>(x, "OddataType"),
                 OsdataType = EF.Property<string>(x, "OsdataType"),
                 IsCreateDataChange = EF.Property<bool>(x, "IsCreateDataChange"),
                 IsNotiUrgent = EF.Property<bool>(x, "IsNotiUrgent")
             }).FirstOrDefaultAsync();
+
+            SwitchToPrivateSchema(dbContext);
+            return data;
         }
 
         public static async Task<List<string>> GetOutletCodes(DbContext dbContext, string ownerType, string ownerCode)
         {
+            SwitchToPublicSchema(dbContext);
             List<string> outletCodes = new();
             try
             {
@@ -333,8 +361,10 @@ namespace SyncToStaging.Helper.Services
             }
             catch (Exception ex)
             {
+                SwitchToPrivateSchema(dbContext);
                 throw ex;
             }
+            SwitchToPrivateSchema(dbContext);
             return outletCodes;
         }
     }

@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>SyncToStaging.Helper</id>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
     <authors>SyncToStaging.Helper</authors>
     <description>Package Description</description>
     <repository type="git" commit="7e802d8d25224b226a0dbfe789ed45d8299330d8" />
