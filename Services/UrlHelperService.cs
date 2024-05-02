@@ -6,14 +6,14 @@
 
 
         /// <summary>
-        /// Swith sang BaseURL của internal, repace principal sang empty
+        /// Swith sang BaseURL của internal, repace principal. sang empty
         /// </summary>
         /// <param name="initialUrl"></param>
         /// <returns></returns>
         public static string InternalBaseUrl(string initialUrl)
         {
             if (string.IsNullOrEmpty(initialUrl)) return default;
-            return initialUrl.Replace(PRINCIPLECODESERVICEURLCONSTANT, string.Empty);
+            return initialUrl.Replace($"{PRINCIPLECODESERVICEURLCONSTANT}.", string.Empty);
         }
         /// <summary>
         /// Swith sang BaseURL của external, repace principal sang code
