@@ -298,8 +298,8 @@ namespace SyncToStaging.Helper.Services
                     Code = EF.Property<string>(d.First(), "Code"),
                     Url = EF.Property<string>(d.First(), "Url"),
                 }).ToDictionaryAsync(d => d.Code, m => m);
-            return data;
             SwitchToPrivateSchema(dbContext);
+            return data;
         }
 
         /// <summary>
